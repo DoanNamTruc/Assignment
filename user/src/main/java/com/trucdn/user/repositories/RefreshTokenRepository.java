@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface RefreshTokenRepository extends RefreshableCRUDRepository<RefreshToken, Integer> {
+public interface RefreshTokenRepository extends RefreshableCRUDRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByToken(String token);
 }

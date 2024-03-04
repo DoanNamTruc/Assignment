@@ -18,9 +18,9 @@ public class RefreshTokenService {
     @Autowired
     UserRepository userRepository;
 
-    public RefreshToken createRefreshToken(String username){
+    public RefreshToken createRefreshToken(Long id){
         RefreshToken refreshToken = RefreshToken.builder()
-                .userInfo(userRepository.findByUsername(username))
+                .userInfo(userRepository.findById(id).get())
                 .token(UUID.randomUUID().toString())
                 .expiryDate(Instant.now().plusMillis(600000))
                 .build();

@@ -1,5 +1,9 @@
 package com.trucdn.user.controllers;
 
+import com.nimbusds.jose.shaded.gson.Gson;
+import com.nimbusds.jose.shaded.gson.GsonBuilder;
+import com.trucdn.user.common.constant.UserMsgType;
+import com.trucdn.user.common.external.UserNotifyMsg;
 import com.trucdn.user.dtos.*;
 import com.trucdn.user.models.RefreshToken;
 import com.trucdn.user.services.impl.JwtService;
@@ -36,16 +40,14 @@ public class UserController {
     @Autowired
     RefreshTokenService refreshTokenService;
 
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
     @PostMapping(value = "/create")
-    public ResponseEntity saveUser(@RequestBody UserRequest userRequest) {
-        try {
+    public ResponseEntity<Object>  saveUser(@RequestBody UserRequest userRequest) {
             UserValidate.register(userRequest);
             UserResponse userResponse = userService.saveUser(userRequest);
             notifyEventService.userRegisterEvent(userResponse);
             return ResponseEntity.ok(userResponse);
-        } catch (BadRequestException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
     }
 
     @GetMapping("/profile")
@@ -61,13 +63,15 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDTO> AuthenticateAndGetToken(@RequestBody AuthRequestDTO authRequestDTO){
         UserValidate.login(authRequestDTO);
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequestDTO.getLoginId(), authRequestDTO.getPassword()));
-        UserLoginResponse response = userService.updateLoginTime(authRequestDTO.getLoginId());
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                gson.toJson((LoginIdGroupDTO)authRequestDTO),
+                authRequestDTO.getPassword()));
+        UserLoginResponse response = userService.updateLoginTime(authRequestDTO);
         notifyEventService.userLoginEvent(response);
         if(authentication.isAuthenticated()){
-            RefreshToken refreshToken = refreshTokenService.createRefreshToken(authRequestDTO.getLoginId());
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(response.getId());
             return ResponseEntity.ok().body(JwtResponseDTO.builder()
-                    .accessToken(jwtService.GenerateToken(authRequestDTO.getLoginId()))
+                    .accessToken(jwtService.GenerateToken(response.getId().toString()))
                     .token(refreshToken.getToken()).build());
         } else {
             throw new UsernameNotFoundException("invalid user request..!!");

@@ -1,5 +1,6 @@
 package com.trucdn.user.services.impl;
 
+import com.trucdn.user.dtos.AuthRequestDTO;
 import com.trucdn.user.dtos.UserLoginResponse;
 import com.trucdn.user.dtos.UserRequest;
 import com.trucdn.user.dtos.UserResponse;
@@ -35,8 +36,11 @@ public class UserServiceImpl implements UserService {
         String encodedPassword = encoder.encode(rawPassword);
         UserInfo user = modelMapper.map(userRequest, UserInfo.class);
         user.setPassword(encodedPassword);
-
+        if (user.getEmail().isBlank()) user.setEmail(null);
+        if (user.getUsername().isBlank()) user.setUsername(null);
+        if (user.getPhoneNumber().isBlank()) user.setPhoneNumber(null);
         List<UserInfo> existedUsers = userRepository.findUserByMultiParam(user.getEmail(), user.getUsername(), user.getPhoneNumber());
+
         if (!existedUsers.isEmpty()) {
             StringBuilder errorMsg = new StringBuilder();
             errorMsg.append("Parameter existed :");
@@ -70,8 +74,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserLoginResponse updateLoginTime(String loginId) {
-        List<UserInfo> existedUsers = userRepository.findUserByMultiParam(loginId, loginId, loginId);
+    public UserLoginResponse updateLoginTime(AuthRequestDTO authRequestDTO) {
+        List<UserInfo> existedUsers = userRepository.findUserByMultiParam(authRequestDTO.getEmail(), authRequestDTO.getUsername(), authRequestDTO.getPhoneNumber());
         UserInfo user = existedUsers.get(0);
         UserLoginResponse loginResponse =  modelMapper.map(user, UserLoginResponse.class);
         if (user.getLatestLogin() == null) {
